@@ -34,6 +34,17 @@ Isaac Sim 安装要求和 EULA 见 [NVIDIA 官方说明](https://docs.isaacsim.o
 
 ## 数据准备与验证（不训练）
 
+查看已有数据（不需要启动 Isaac Sim，也不会训练或修改数据）：
+
+```bash
+conda activate loom-prototype
+python -m loom_prototype.viewer --data-root data/prototype --port 8765
+```
+
+浏览器打开 <http://127.0.0.1:8765>。可选择 train/val/test、任务或校准 episode，
+播放、逐帧查看、拖动时间轴，并同步对比多相机 RGB；下方显示末端 XYZ、夹爪曲线和原始 state/action。
+v08–v11 留出视角只在 test 中提供。viewer 只读取已有 HDF5，保留原始 30 Hz 时间轴和等待帧。
+
 ```bash
 # 重新生成；已完成的 episode 会跳过，专家失败立即停止
 python -m loom_prototype.collect --output data/prototype

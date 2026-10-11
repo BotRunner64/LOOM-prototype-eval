@@ -16,5 +16,8 @@ dev = ["pytest>=8", "ruff>=0.12"]
 [tool.setuptools.packages.find]
 include = ["loom_prototype*"]
 
+[tool.setuptools.package-data]
+loom_prototype = ["viewer.html"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
