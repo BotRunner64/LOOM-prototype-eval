@@ -157,6 +157,8 @@ def main():
                     result = {
                         "checkpoint": str(Path(args.checkpoint).resolve()),
                         "training_seed": checkpoint["config"]["seed"],
+                        "training_steps": checkpoint["step"],
+                        "model_parameters": sum(p.numel() for p in model.parameters()),
                         "distribution": "narrow"
                         if len(train_views) == len(cfg["narrow_views"])
                         else "broad",

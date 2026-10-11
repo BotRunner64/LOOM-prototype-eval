@@ -187,3 +187,30 @@ def test_statistics_paired_interaction():
     assert result["co_train_interaction"]["correct-minus-none"]["bootstrap95"] == [1, 1]
     with pytest.raises(ValueError, match="Duplicate"):
         summarize(rows + [rows[0]])
+
+
+def test_statistics_rejects_unpaired_or_unmatched_protocol():
+    rows = [
+        {
+            "distribution": "broad",
+            "training_seed": 17,
+            "view": "v08",
+            "episode_id": "0",
+            "repeat": 0,
+            "mode": mode,
+            "success": False,
+            "group": "heldout",
+            "data_hash": "dataA",
+            "horizon": 600,
+        }
+        for mode in ("none", "correct", "wrong")
+    ]
+    with pytest.raises(ValueError, match="Missing paired"):
+        summarize(rows[:-1], bootstrap=10)
+    changed = [dict(r) for r in rows]
+    changed[-1]["horizon"] = 400
+    with pytest.raises(ValueError, match="protocol mismatch"):
+        summarize(changed, bootstrap=10)
+    narrow = [dict(r, distribution="narrow", view="v09") for r in rows]
+    with pytest.raises(ValueError, match="match heldout"):
+        summarize(rows + narrow, bootstrap=10)

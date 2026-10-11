@@ -24,8 +24,24 @@ def wilson(successes, total):
 
 
 def summarize(records, bootstrap=5000, seed=123):
+    if not records or bootstrap < 1:
+        raise ValueError("Nonempty trials and positive bootstrap count required")
+    for field in (
+        "data_hash",
+        "horizon",
+        "execute_steps",
+        "training_steps",
+        "model_parameters",
+    ):
+        if any(field in r for r in records) and (
+            any(field not in r for r in records)
+            or len({r[field] for r in records}) != 1
+        ):
+            raise ValueError(f"Evaluation protocol mismatch: {field}")
     outcomes = {}
     rates = defaultdict(list)
+    absolute = defaultdict(lambda: defaultdict(list))
+    paired_modes = defaultdict(set)
     for r in records:
         key = (
             r["distribution"],
@@ -40,11 +56,45 @@ def summarize(records, bootstrap=5000, seed=123):
                 "Duplicate trial; do not concatenate reruns of the same checkpoint"
             )
         outcomes[key] = float(r["success"])
+        paired_modes[key[:-1]].add(r["mode"])
+        absolute[(r["distribution"], r["group"], r["mode"])][
+            (r["training_seed"], r["episode_id"])
+        ].append(float(r["success"]))
         rates[(r["distribution"], r["group"], r["view"], r["mode"])].append(
             float(r["success"])
         )
+    if any(modes != {"none", "correct", "wrong"} for modes in paired_modes.values()):
+        raise ValueError("Missing paired condition")
+    held_grids = {
+        d: {
+            (r["training_seed"], r["view"], r["episode_id"], r["repeat"])
+            for r in records
+            if r["distribution"] == d and r["group"] == "heldout"
+        }
+        for d in ("broad", "narrow")
+    }
+    if all(held_grids.values()) and held_grids["broad"] != held_grids["narrow"]:
+        raise ValueError(
+            "Broad/narrow must match heldout views, seeds, layouts and repeats"
+        )
+    for distribution, group in {(r["distribution"], r["group"]) for r in records}:
+        subset = [
+            r
+            for r in records
+            if r["distribution"] == distribution
+            and r["group"] == group
+            and r["mode"] == "correct"
+        ]
+        seeds = {r["training_seed"] for r in subset}
+        views = {r["view"] for r in subset}
+        layouts = {r["episode_id"] for r in subset}
+        repeats = {r["repeat"] for r in subset}
+        if len(subset) != len(seeds) * len(views) * len(layouts) * len(repeats):
+            raise ValueError("Incomplete per-group evaluation grid")
     summary = {
         "per_view": {},
+        "by_group": {},
+        "co_train_absolute": {},
         "paired_effects": {},
         "co_train_interaction": {},
         "bootstrap_clusters": "training seed and task initial layout; views/repeats averaged within layout",
@@ -108,6 +158,24 @@ def summarize(records, bootstrap=5000, seed=123):
             "bootstrap_samples": bootstrap,
         }
 
+    absolute = {
+        key: {cluster: float(np.mean(v)) for cluster, v in values.items()}
+        for key, values in absolute.items()
+    }
+    for key, values in sorted(absolute.items()):
+        result = estimate(values)
+        result["success_rate"] = result.pop("delta")
+        result["trials"] = sum(
+            len(v) for k, v in rates.items() if (k[0], k[1], k[3]) == key
+        )
+        summary["by_group"]["/".join(key)] = result
+    for mode in ("none", "correct", "wrong"):
+        bk = ("broad", "heldout", mode)
+        nk = ("narrow", "heldout", mode)
+        if bk in absolute and nk in absolute:
+            summary["co_train_absolute"][mode] = estimate(
+                {k: absolute[bk][k] - absolute[nk][k] for k in absolute[bk]}
+            )
     for key, values in sorted(reduced.items()):
         summary["paired_effects"]["/".join(key)] = estimate(values)
     for control in ("none", "wrong"):
