@@ -6,7 +6,7 @@ import torch
 from scipy.spatial.transform import Rotation
 
 from loom_prototype.collect import write_episode
-from loom_prototype.data import EpisodeDataset, batch_at_step
+from loom_prototype.data import EpisodeDataset, active_anchor_indices, batch_at_step
 from loom_prototype.geometry import (
     matrix_to_rotation6d,
     relative_pose,
@@ -214,3 +214,12 @@ def test_statistics_rejects_unpaired_or_unmatched_protocol():
     narrow = [dict(r, distribution="narrow", view="v09") for r in rows]
     with pytest.raises(ValueError, match="match heldout"):
         summarize(rows + narrow, bootstrap=10)
+
+
+def test_idle_filter_keeps_original_chunk_time_grid():
+    states = np.tile([0.4, 0, 0.3, 1, 0, 0, 0, 1, 0, 1.0], (20, 1)).astype(np.float32)
+    states[12:, 9] = 0.5
+    np.testing.assert_array_equal(active_anchor_indices(states, 4), [8, 9, 10, 11])
+    # Pose-only motion remains eligible even with a constant gripper.
+    states[:, 0] += np.arange(20) * 0.003
+    np.testing.assert_array_equal(active_anchor_indices(states, 4), np.arange(19))

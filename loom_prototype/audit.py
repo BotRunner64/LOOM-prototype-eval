@@ -154,7 +154,6 @@ def audit(root, verify_hash=True):
                 ).items()
             )
         ),
-        "training_started": False,
         "hashes_verified": verify_hash,
         "min_calibration_second_singular_value": min(x[1] for x in motion),
     }

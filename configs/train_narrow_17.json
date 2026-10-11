@@ -26,5 +26,10 @@
   "val_every": 1000,
   "val_batches": 16,
   "save_every": 2000,
-  "output_dir": "runs/narrow/seed-17"
+  "output_dir": "runs/narrow/seed-17",
+  "idle_thresholds": [
+    0.002,
+    0.02,
+    0.05
+  ]
 }

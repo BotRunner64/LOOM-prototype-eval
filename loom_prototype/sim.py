@@ -125,6 +125,24 @@ class Tabletop:
         self.down = np.array([1.0, 0.0, 0.0, 0.0])
         self.reset([0.5, 0, 0.021])
 
+    def select_view(self, view_id):
+        """Reuse one external camera during evaluation; task physics is unchanged."""
+        if len(self.cameras) != 1:
+            raise ValueError("Camera switching requires a single-camera scene")
+        if view_id in self.cameras:
+            return
+        view = next(v for v in self.cfg["views"] if v["id"] == view_id)
+        eye = np.asarray(view["eye"])
+        target = np.asarray(view["target"])
+        z = (eye - target) / np.linalg.norm(eye - target)
+        x = np.cross([0, 0, 1], z)
+        x /= np.linalg.norm(x)
+        y = np.cross(z, x)
+        quat = Rotation.from_matrix(np.stack([x, y, z], axis=1)).as_quat()
+        camera = next(iter(self.cameras.values()))
+        camera.set_world_poses(self.tensor(eye), self.tensor(quat), convention="opengl")
+        self.cameras = {view_id: camera}
+
     def tensor(self, values):
         return torch.as_tensor(
             np.asarray(values)[None], dtype=torch.float32, device=self.device

@@ -73,6 +73,7 @@ def main():
         cfg["views"],
         chunk_size=model.config.chunk_size,
         context_frames=model.config.context_frames,
+        idle_thresholds=cfg["idle_thresholds"],
     )
     val = EpisodeDataset(
         cfg["data_root"],
@@ -80,7 +81,12 @@ def main():
         split="val",
         chunk_size=model.config.chunk_size,
         context_frames=model.config.context_frames,
+        idle_thresholds=cfg["idle_thresholds"],
     )
+    cfg["sampling_signatures"] = {
+        "train": dataset.sampling_signature(),
+        "val": val.sampling_signature(),
+    }
     data_hash = fingerprint(cfg["data_root"])
     if args.dry_run:
         before = {k: v.clone() for k, v in model.state_dict().items()}
@@ -130,6 +136,8 @@ def main():
                     "parameter_updates": 0,
                     "parameters": sum(p.numel() for p in model.parameters()),
                     "train_anchors": len(dataset),
+                    "dropped_idle_anchors": dataset.dropped_idle,
+                    "sampling_signatures": cfg["sampling_signatures"],
                     "val_anchors": len(val),
                     "losses": losses,
                     "action_shape": list(actions.shape),

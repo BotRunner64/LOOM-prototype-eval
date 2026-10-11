@@ -28,6 +28,8 @@ python -m loom_prototype.audit --data-root data/prototype
 
 # 单元测试及真实数据前向检查；不会调用 backward/optimizer.step
 python -m pytest -q
+# 用实际示范检查动作恢复与物理执行，不训练模型
+python scripts/replay_oracle.py --report reports/oracle-raw.json
 python -m loom_prototype.train --config configs/train_broad_17.json --dry-run
 python -m loom_prototype.train --config configs/train_narrow_17.json --dry-run
 ```

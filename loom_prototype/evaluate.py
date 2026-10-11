@@ -50,6 +50,7 @@ def main():
     p.add_argument("--horizon", type=int, default=600)
     p.add_argument("--execute-steps", type=int, default=4)
     p.add_argument("--limit", type=int)
+    p.add_argument("--episodes-per-view", type=int)
     args = p.parse_args()
     model, checkpoint = load_policy(args.checkpoint)
     model.requires_grad_(False)
@@ -69,6 +70,14 @@ def main():
         ],
         key=lambda r: (r["view"], r["episode_id"]),
     )
+    if args.episodes_per_view:
+        tasks = [
+            r
+            for r in tasks
+            if int(r["episode_id"].split("_")[-1]) < args.episodes_per_view
+        ]
+    if not tasks:
+        raise ValueError("No test episodes selected")
     if args.limit:
         tasks = tasks[: args.limit]
     output = Path(args.output)
@@ -82,8 +91,9 @@ def main():
     try:
         from .sim import Tabletop
 
-        sim = Tabletop(cfg, views=views)
+        sim = Tabletop(cfg, views=[tasks[0]["view"]])
         for task in tasks:
+            sim.select_view(task["view"])
             index = int(task["episode_id"].split("_")[-1])
             for repeat in range(args.repeats):
                 correct, wrong = reference_pair(records, task["view"], index, repeat)
