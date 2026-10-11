@@ -1,0 +1,111 @@
+{
+  "status": "ready_for_training; training not started",
+  "created_at_utc": "2026-10-11T16:39:21.860056+00:00",
+  "parameter_updates": 0,
+  "environment": {
+    "conda_env": "loom-prototype",
+    "python": "3.12.14",
+    "prefix": "/home/jw/local/miniconda3/envs/loom-prototype",
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+    "packages": {
+      "torch": "2.11.0+cu128",
+      "numpy": "2.3.1",
+      "scipy": "1.17.0",
+      "h5py": "3.16.0",
+      "pillow": "12.2.0",
+      "isaacsim": "6.0.1.0",
+      "isaaclab": "3.0.0b2.post1",
+      "pytest": "9.1.1",
+      "ruff": "0.16.7"
+    },
+    "gpu": "NVIDIA GeForce RTX 5090, 595.91.07, 32607 MiB",
+    "pip_check": "passed",
+    "franka_assets_verified": 95
+  },
+  "dataset": {
+    "root": "/home/jw/projects/my_projects/LOOM-prototype-eval/data/prototype",
+    "data_sha256": "b671dc3993f2a76c15bb6d4cb7d46d64ed5e99b20930cbf1e003c86c75a4d0d9",
+    "episode_files": 1472,
+    "physical_episodes": 164,
+    "frames": 563208,
+    "bytes": 4936424282,
+    "counts": {
+      "calibration/test": 96,
+      "calibration/train": 64,
+      "calibration/val": 32,
+      "task/test": 384,
+      "task/train": 768,
+      "task/val": 128
+    },
+    "train_views": [
+      "v00",
+      "v01",
+      "v02",
+      "v03",
+      "v04",
+      "v05",
+      "v06",
+      "v07"
+    ],
+    "heldout_views": [
+      "v08",
+      "v09",
+      "v10",
+      "v11"
+    ],
+    "manifest_archive": "reports/dataset-manifest.jsonl",
+    "full_audit": "reports/data-audit.json"
+  },
+  "strategy": {
+    "parameters": 2265610,
+    "action_dim": 10,
+    "chunk_size": 16,
+    "context_frames": 16,
+    "seeds": [
+      17,
+      29,
+      43
+    ],
+    "planned_updates_per_run": 20000,
+    "planned_sample_presentations_per_run": 640000,
+    "broad_narrow_budget_and_capacity_matched": true,
+    "reference_repository": "/home/jw/projects/my_projects/bq_native_policy",
+    "reference_commit": "660a8fb79d824bbbb7d1d87bc96a00342599561f",
+    "implementation_commit": "b17b95a2e29840be3f4aa8786a09e22b84d4cf59"
+  },
+  "validation": {
+    "unit_tests": {
+      "passed": 8,
+      "report": "reports/unit-tests.txt"
+    },
+    "lint": {
+      "passed": true,
+      "report": "reports/lint.txt"
+    },
+    "full_dataset_forward_only": [
+      "reports/dry-run-broad.json",
+      "reports/dry-run-narrow.json"
+    ],
+    "precisions": [
+      "fp32",
+      "bf16"
+    ],
+    "conditions": [
+      "none",
+      "correct",
+      "wrong"
+    ],
+    "physical_temporal_action_replay": "reports/oracle-raw.json",
+    "frozen_evaluator_interface": "reports/eval-interface-check.json",
+    "nearest_state_lookup_diagnostic": {
+      "report": "reports/oracle-closed-loop.json",
+      "success": false,
+      "interpretation": "Waiting-state stall of a diagnostic lookup method; not formal policy performance. Original time grid retained and idle training anchors filtered."
+    }
+  },
+  "source_document_sha256": "860e29d89ddeabcc6e6d209428bdb3d09e89cd04db6cf66d82cf1db3b9aa6cac",
+  "limitations": [
+    "No trained checkpoint or learned closed-loop success rate exists. Forward losses and expert replay do not establish context adaptation gains.",
+    "Large HDF5 data and robot files are local, Git-ignored; repository tracks checksums and reproducible collection code."
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "parameter_updates": 0,
+  "mode": "raw-measured-gripper",
+  "episode_id": "task_train_0000",
+  "success": true,
+  "max_cube_z": 0.2156410813331604,
+  "final_cube": [
+    0.4181978702545166,
+    0.22899821400642395,
+    0.019999733194708824
+  ],
+  "steps": 465
+}

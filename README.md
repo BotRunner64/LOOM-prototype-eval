@@ -4,6 +4,19 @@
 
 本次交付范围是环境、完整训练/验证/测试数据、策略及训练/评测代码；**不启动训练**。数据准备结果与验证记录见 `reports/`，详细协议见 [docs/protocol.md](docs/protocol.md)。
 
+## 当前验收结果
+
+完整数据位于 `data/prototype/`：164 个独立物理 episode，在多个相机下记录为 1,472 个 HDF5 文件，共 563,208 帧、4.94 GB（十进制）。8 个基础训练视角、4 个共同留出视角，训练/验证/测试布局及校准参考独立。
+
+| 数据 | 训练 | 验证 | 测试 |
+| --- | ---: | ---: | ---: |
+| 任务轨迹文件 | 768 | 128 | 384 |
+| 校准轨迹文件 | 64 | 32 | 96 |
+
+全部文件通过哈希、图像时序、30 Hz 时钟、动作坐标、物理成功、校准双方向及划分检查。8 项单元测试及 lint 通过；broad/narrow 在真实数据上完成 FP32/BF16 三条件前向验收，参数更新次数为 0。记录动作的物理回放完成抓放；随机初始化模型完成两个视角、六个条件的短程冻结评测接口检查。详细结果见 [readiness.json](reports/readiness.json)、[数据审计](reports/data-audit.json)、[broad 前向检查](reports/dry-run-broad.json)、[narrow 前向检查](reports/dry-run-narrow.json) 和 [评测接口检查](reports/eval-interface-check.json)。后者只验证流程，不是学习策略成功率。
+
+策略是约 227 万参数的小 CNN + Transformer flow-matching head，沿用参考项目的 relative pose、rotation6D、30 Hz/16 步 chunk 和未来绝对夹爪约定。context dropout 同时监督有/无参考；六份配置覆盖 broad/narrow × 三个种子，训练预算一致，包含验证、断点恢复、冻结配对评测及置信区间统计。
+
 ## 环境
 
 当前机器已经配置 `conda activate loom-prototype`（Python 3.12，Isaac Sim 6.0.1，Isaac Lab 3，PyTorch 2.11 CUDA 12.8），使用 RTX 5090。
