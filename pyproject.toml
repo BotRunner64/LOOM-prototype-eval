@@ -5,19 +5,16 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "loom-prototype"
 version = "0.1.0"
-description = "Isaac Sim camera-domain context adaptation prototype"
+description = "Panda tabletop simulation, data generation and export validation"
 requires-python = ">=3.12"
-dependencies = ["torch>=2.11", "numpy>=2", "scipy>=1.15", "h5py>=3.12", "pillow>=11"]
+dependencies = ["numpy>=2", "scipy>=1.15", "pyarrow>=20", "av>=14"]
 
 [project.optional-dependencies]
-sim = ["isaacsim[all,extscache]==6.0.1.0", "isaaclab==3.0.0b2.post1"]
+sim = ["torch==2.11.0+cu128", "isaacsim[all,extscache]==6.0.1.0", "isaaclab==3.0.0b2.post1"]
 dev = ["pytest>=8", "ruff>=0.12"]
 
 [tool.setuptools.packages.find]
 include = ["loom_prototype*"]
-
-[tool.setuptools.package-data]
-loom_prototype = ["viewer.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

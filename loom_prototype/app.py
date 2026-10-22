@@ -1,7 +1,7 @@
 """Launch the installed Isaac Lab experience with project startup settings.
 
 Import this module freely; simulator imports remain inside ``launch_app``.
-See docs/running.md for the settings and remaining upstream diagnostics.
+Startup settings keep camera rendering and material discovery self-contained.
 """
 
 import atexit

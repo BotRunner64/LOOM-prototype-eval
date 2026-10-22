@@ -1,1 +1,1 @@
-"""LOOM camera adaptation prototype."""
+"""Panda tabletop data generation and environment validation."""

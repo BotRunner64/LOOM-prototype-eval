@@ -1,71 +1,29 @@
-"""Contract rotation6D uses the FIRST TWO COLUMNS, not rows."""
+"""Fixed Panda hand-to-TCP transform and column-major export poses."""
 
 import numpy as np
-from scipy.spatial.transform import Rotation, Slerp
+from scipy.spatial.transform import Rotation
 
-FPS = 30
-ACTION_DIM = 10
-
-
-def time_offsets_ns(count: int) -> np.ndarray:
-    """Rounded rational 30 Hz grid, without accumulated rounding error."""
-    k = np.arange(count, dtype=np.int64)
-    return (k * 1_000_000_000 + FPS // 2) // FPS
+# Contract axes in panda_hand: approach +Z, dorsal +X, opening -Y.
+HAND_FROM_TCP = np.array([[0.0, 0.0, 1.0], [0.0, -1.0, 0.0], [1.0, 0.0, 0.0]])
 
 
-def rotation6d_to_matrix(d6: np.ndarray) -> np.ndarray:
-    d6 = np.asarray(d6, dtype=np.float64)
-    if d6.shape[-1] != 6 or not np.isfinite(d6).all():
-        raise ValueError("rotation6D must contain six finite values")
-    a, b = d6[..., :3], d6[..., 3:]
-    norm_a = np.linalg.norm(a, axis=-1, keepdims=True)
-    if np.any(norm_a < 1e-8):
-        raise ValueError("Degenerate first rotation column")
-    a = a / norm_a
-    b = b - np.sum(a * b, axis=-1, keepdims=True) * a
-    norm_b = np.linalg.norm(b, axis=-1, keepdims=True)
-    if np.any(norm_b < 1e-8):
-        raise ValueError("Degenerate second rotation column")
-    b = b / norm_b
-    return np.stack((a, b, np.cross(a, b)), axis=-1)
+def tcp_pose(hand_position, hand_quaternion, offset):
+    """Return [xyz, R columns] in the fixed world frame; quaternion is xyzw."""
+    rotation = Rotation.from_quat(hand_quaternion).as_matrix()
+    position = np.asarray(hand_position) + rotation @ np.asarray(offset)
+    return np.r_[position, (rotation @ HAND_FROM_TCP).T.reshape(9)]
 
 
-def matrix_to_rotation6d(rotation: np.ndarray) -> np.ndarray:
-    return np.concatenate((rotation[..., :, 0], rotation[..., :, 1]), axis=-1)
-
-
-def interpolate_pose(
-    times: np.ndarray, poses: np.ndarray, query: np.ndarray
-) -> np.ndarray:
-    """No extrapolation; caller checks coverage and gaps before requesting labels."""
-    if len(times) < 2 or query.min() < times[0] or query.max() > times[-1]:
-        raise ValueError(
-            "Pose interpolation needs two samples and queries within coverage"
+def validate_poses(poses):
+    poses = np.asarray(poses, dtype=np.float64)
+    if poses.ndim != 2 or poses.shape[1] != 12 or not np.isfinite(poses).all():
+        raise ValueError("Expected finite N x 12 TCP poses")
+    rotations = poses[:, 3:].reshape(-1, 3, 3).transpose(0, 2, 1)
+    if not (
+        np.allclose(
+            rotations @ rotations.transpose(0, 2, 1), np.eye(3), atol=1e-6, rtol=0
         )
-    # Subtract the origin BEFORE float conversion to preserve nanosecond precision.
-    seconds = (times - times[0]).astype(np.float64) / 1e9
-    query_seconds = (query - times[0]).astype(np.float64) / 1e9
-    xyz = np.stack(
-        [np.interp(query_seconds, seconds, poses[:, i]) for i in range(3)], -1
-    )
-    rotations = Slerp(
-        seconds, Rotation.from_matrix(rotation6d_to_matrix(poses[:, 3:]))
-    )(query_seconds)
-    return np.concatenate((xyz, matrix_to_rotation6d(rotations.as_matrix())), axis=-1)
-
-
-def relative_pose(current: np.ndarray, future: np.ndarray) -> np.ndarray:
-    """Every future pose is relative to the SAME current EEF frame: inv(T0) @ Tk."""
-    r0 = rotation6d_to_matrix(current[3:])
-    rk = rotation6d_to_matrix(future[..., 3:])
-    translation = np.einsum("ij,...j->...i", r0.T, future[..., :3] - current[:3])
-    return np.concatenate((translation, matrix_to_rotation6d(r0.T @ rk)), axis=-1)
-
-
-def restore_pose(current: np.ndarray, delta: np.ndarray) -> np.ndarray:
-    """Restore each chunk element independently, never accumulate the deltas."""
-    r0 = rotation6d_to_matrix(current[3:])
-    xyz = current[:3] + np.einsum("ij,...j->...i", r0, delta[..., :3])
-    return np.concatenate(
-        (xyz, matrix_to_rotation6d(r0 @ rotation6d_to_matrix(delta[..., 3:]))), -1
-    )
+        and np.allclose(np.linalg.det(rotations), 1, atol=1e-6, rtol=0)
+    ):
+        raise ValueError("Invalid rotation matrix")
+    return poses
