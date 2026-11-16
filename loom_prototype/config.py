@@ -56,11 +56,6 @@ def validate_config(config, smoke=False):
             for side in SIDES
         ):
             raise ValueError(f"Expected finite left/right {key}")
-    if (
-        np.asarray(cfg["tcp_offset"]).shape != (3,)
-        or not np.isfinite(cfg["tcp_offset"]).all()
-    ):
-        raise ValueError("Invalid TCP offset")
     if not isinstance(cfg["instruction"], str) or not cfg["instruction"].strip():
         raise ValueError("Expected a task instruction")
     if smoke:

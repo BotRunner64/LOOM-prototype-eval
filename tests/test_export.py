@@ -12,7 +12,7 @@ import pytest
 from loom_prototype.audit import audit, validate_episode
 from loom_prototype.config import load_config
 from loom_prototype.export import DatasetWriter, EpisodeWriter, write_table
-from loom_prototype.geometry import tcp_pose
+from loom_prototype.geometry import eef_pose
 
 
 def small_config():
@@ -29,7 +29,7 @@ def write_example(writer, episode_id="task_0000", evidence=None):
     ):
         states = {
             s: (
-                tcp_pose([index * 0.01, y, 0.2], [0, 0, 0, 1], cfg["tcp_offset"]),
+                eef_pose([index * 0.01, y, 0.2], [0, 0, 0, 1]),
                 0.2 + 0.1 * index,
             )
             for s, y in (("left", 0.55), ("right", -0.55))

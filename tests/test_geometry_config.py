@@ -3,19 +3,20 @@ import pytest
 from scipy.spatial.transform import Rotation
 
 from loom_prototype.config import episode_plan, load_config, validate_config
-from loom_prototype.geometry import HAND_FROM_TCP, tcp_pose, validate_poses
+from loom_prototype.geometry import HAND_FROM_EEF, eef_pose, validate_poses
 
 
-def test_tcp_translation_axes_and_column_order():
+def test_eef_origin_is_gripper_mount_with_contract_axes():
     native = Rotation.from_euler("z", 90, degrees=True)
-    pose = tcp_pose([0.4, 0.2, 0.3], native.as_quat(), [0.0, 0.0, 0.1034])
-    np.testing.assert_allclose(pose[:3], [0.4, 0.2, 0.4034])
+    pose = eef_pose([0.4, 0.2, 0.3], native.as_quat())
+    # Origin stays on the mounting interface; no fingertip/TCP offset is applied.
+    np.testing.assert_allclose(pose[:3], [0.4, 0.2, 0.3])
     rotation = pose[3:].reshape(3, 3).T
     np.testing.assert_allclose(rotation[:, 0], native.apply([0, 0, 1]), atol=1e-12)
     np.testing.assert_allclose(rotation[:, 2], native.apply([1, 0, 0]), atol=1e-12)
     np.testing.assert_allclose(rotation[:, 1], np.cross(rotation[:, 2], rotation[:, 0]))
     validate_poses(pose[None])
-    np.testing.assert_allclose(np.linalg.det(HAND_FROM_TCP), 1.0)
+    np.testing.assert_allclose(np.linalg.det(HAND_FROM_EEF), 1.0)
 
 
 def test_config_has_two_arms_hd_and_no_experiment_partitions():

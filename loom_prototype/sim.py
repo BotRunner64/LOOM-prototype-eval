@@ -14,7 +14,7 @@ from isaaclab_physx.renderers import IsaacRtxRendererCfg
 from scipy.spatial.transform import Rotation
 
 from .config import SIDES
-from .geometry import tcp_pose
+from .geometry import eef_pose
 
 DEVICE = "cuda:0"
 DOWN = np.array([1.0, 0.0, 0.0, 0.0])  # xyzw; native hand +Z points down.
@@ -30,7 +30,6 @@ class Panda:
             np.asarray(cfg["bases"][side]),
             np.asarray(cfg["goals"][side]),
         )
-        self.offset = cfg["tcp_offset"]
         robot = FRANKA_PANDA_HIGH_PD_CFG.copy()
         robot.prim_path = f"/World/{side}/Robot"
         robot.spawn.usd_path = str(Path(cfg["robot_usd"]).resolve())
@@ -117,7 +116,7 @@ class Panda:
     def observe(self):
         pose = self.hand()
         grip = self.robot.data.joint_pos.torch[0, self.finger_ids].sum().item() / 0.08
-        return tcp_pose(pose[:3], pose[3:], self.offset), float(np.clip(grip, 0, 1))
+        return eef_pose(pose[:3], pose[3:]), float(np.clip(grip, 0, 1))
 
     def control(self, grip):
         pose = self.robot.data.body_link_pose_w.torch[:, self.hand_id]

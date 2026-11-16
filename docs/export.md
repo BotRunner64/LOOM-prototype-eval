@@ -1,28 +1,30 @@
 # 双 Panda 仿真到 LOOM-data 的映射
 
-目标格式依据相邻 `LOOM-data` 仓库的 `docs/contract/export-contract.md`，核对版本为提交 `55e0ba6527c29ed75518c3c0bbaf30786f10e2f3`。本文件只记录仿真源字段及转换，不另立目标格式。运行时无需导入该仓库。
+目标格式依据相邻 `LOOM-data` 仓库的 `docs/contract/export-contract.md`，核对版本为提交 `2f95b9d1f0b26115ac8839348d2c3b6bd2353119`。本文件只记录仿真源字段及转换，不另立目标格式。运行时无需导入该仓库。
 
 ## 两路真实机器人
 
 `left` 和 `right` 是场景内两台独立 Panda，base 默认分别位于世界系 `[0,0.55,0]` 与 `[0,-0.55,0]`，姿态均为单位旋转。各自抓取独立方块并放入各自绿色目标区；成功要求两路都曾将方块抬高至 0.10 m 以上，最终物体 XY 距目标均小于 0.05 m、Z 位于 `(0.012,0.045)` m 且线速度小于 0.08 m/s。任何一侧失败，整集停止提交。
 
-## TCP 与轴向
+## EEF 原点与轴向
 
-源位姿读取各自 `panda_hand` 的 `body_link_pose_w`，四元数为 Isaac Lab 3 的 xyzw。位姿参考系为不运动的仿真世界系。TCP 在原生 hand 系中的固定偏移为配置 `tcp_offset`，默认 `[0,0,0.1034]` m，采用 Panda 常用的指尖抓取中心几何定义；这是仿真工具点定义，并非实机标定。
+源位姿读取各自 `panda_hand` 的 `body_link_pose_w`，四元数为 Isaac Lab 3 的 xyzw。位姿参考系为不运动的仿真世界系。
+
+EEF 原点是夹爪安装接口的基准原点，即 `panda_hand` 的 body 原点：Franka 模型中 `panda_hand` 以零平移固连在法兰 `panda_link8` 上，原点落在夹爪与腕部的安装面。它不随夹爪开合变化，导出时不加任何偏移。指尖抓取中心（沿 `+Z_hand` 约 0.1034 m 处的 TCP）不是 EEF 原点，也不导出。
 
 本场景声明原生 `+Z_hand` 为接近方向、`+X_hand` 为工具掌背方向，因此规范轴为：
 
 ```text
-X_tcp = +Z_hand
-Z_tcp = +X_hand
-Y_tcp = -Y_hand
+X_eef = +Z_hand
+Z_eef = +X_hand
+Y_eef = -Y_hand
 
-R_hand_tcp = [[0, 0, 1],
+R_hand_eef = [[0, 0, 1],
               [0,-1, 0],
               [1, 0, 0]]
 
-t_world_tcp = t_world_hand + R_world_hand @ tcp_offset
-R_world_tcp = R_world_hand @ R_hand_tcp
+t_world_eef = t_world_hand
+R_world_eef = R_world_hand @ R_hand_eef
 ```
 
 `pose` 按 `[x,y,z,R00,R10,R20,R01,R11,R21,R02,R12,R22]` 写入不可空的 Arrow `fixed_size_list<float64,12>` 列。左右臂各自读取实际测量，彼此不复制，不存 IK 目标作为 state。

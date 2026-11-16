@@ -27,11 +27,6 @@
       0.021
     ]
   },
-  "tcp_offset": [
-    0,
-    0,
-    0.1034
-  ],
   "instruction": "Use both arms to pick up the red and blue cubes and place each in its green region.",
   "calibration_seed_offset": 500000,
   "episodes": {
